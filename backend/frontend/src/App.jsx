@@ -12,7 +12,7 @@ import { getUserChats } from "./context/Chats/Chats";
 import { UserChatContext } from "./context/chatContext";
 
 function App() {
-  const { setUser, user, setIsAuthen, setLoading, setError } =
+  const { setUser, user, isAuthen, setIsAuthen, setLoading, setError } =
     useContext(UserContext);
   const { chats, setChats, setLoadingChats, setErrorChats } =
     useContext(UserChatContext);
@@ -26,11 +26,11 @@ function App() {
         getUserDetails(setIsAuthen, setUser, setLoading, setError);
         getUserChats(setChats, setLoadingChats, setErrorChats);
       } else {
-        setLoading(false); // No token, stop loading
+        setLoading(false);
       }
     };
     checkCookiesAndDispatch();
-  }, []);
+  }, [isAuthen]);
 
   return (
     <BrowserRouter>
@@ -43,14 +43,7 @@ function App() {
             </ProtectedRoutes>
           }
         />
-        <Route
-          path="/login"
-          element={
-            <AlreadySignIn>
-              <LoginPage />
-            </AlreadySignIn>
-          }
-        />
+        <Route path="/login" element={<LoginPage />} />
         <Route
           path="/register"
           element={

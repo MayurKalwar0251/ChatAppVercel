@@ -5,6 +5,9 @@ import { server } from "../utils/server";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { UserContext } from "@/context/context";
+import { UserChatContext } from "@/context/chatContext";
+import { getUserDetails } from "@/context/Users/User";
+import { getUserChats } from "@/context/Chats/Chats";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -12,7 +15,10 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [visible, setVisible] = useState(false);
 
-  const { isAuthen, setIsAuthen } = useContext(UserContext);
+  const { setUser, user, isAuthen, setIsAuthen, setLoading, setError } =
+    useContext(UserContext);
+  const { chats, setChats, setLoadingChats, setErrorChats } =
+    useContext(UserChatContext);
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -23,7 +29,15 @@ const Login = () => {
     );
 
     if (data.success) {
-      window.location.reload();
+      // window.location.reload();
+      // setIsAuthen(true);
+      console.log(data);
+      // setUser(data.user);
+
+      getUserDetails(setIsAuthen, setUser, setLoading, setError);
+      getUserChats(setChats, setLoadingChats, setErrorChats);
+
+      navigate("/");
     }
   };
 

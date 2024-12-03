@@ -9,6 +9,7 @@ const cors = require("cors");
 const User = require("./models/user");
 const Message = require("./models/message");
 const fileUpload = require("express-fileupload");
+const path = require("path");
 
 const app = express();
 dotenv.config();
@@ -38,11 +39,16 @@ app.use("/api/v1/user", userRouter);
 app.use("/api/v1/chat", chatRouter);
 app.use("/api/v1/message", messageRouter);
 
+// app.get("/", (req, res) => {
+//   res.status(200).json({
+//     success: true,
+//     message: "Server Running",
+//   });
+// });
+
 app.get("/", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Server Running",
-  });
+  app.use(express.static(path.resolve(__dirname, "frontend", "dist")));
+  res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
 });
 
 const server = app.listen(process.env.PORT, () => {
