@@ -1,5 +1,6 @@
 const Chat = require("../models/chat");
 const User = require("../models/user");
+const Message = require("../models/message");
 
 const createOneToOneChat = async (req, res) => {
   const { userId } = req.body;
@@ -45,7 +46,6 @@ const fetchChats = async (req, res) => {
   try {
     const myId = req.user._id;
 
-
     const chats = await Chat.find({
       users: { $in: [myId] },
     })
@@ -62,12 +62,37 @@ const fetchChats = async (req, res) => {
   }
 };
 
+// const fetchChatsById = async (req, res) => {
+//   try {
+//     const { cId } = req.params;
+
+//     const myId = req.user._id;
+
+//     const chat = await Chat.findById(cId)
+//       .populate("users", "-password")
+//       .populate("latestMessage");
+
+//     if (!chat) {
+//       return res
+//         .status(500)
+//         .json({ success: false, message: "Failed to fetch chats." });
+//     }
+
+//     return res
+//       .status(200)
+//       .json({ success: true, message: "Chats fetched successfully", chat });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ message: "Failed to fetch chats" });
+//   }
+// };
+
 const fetchChatsById = async (req, res) => {
   try {
     const { cId } = req.params;
-
     const myId = req.user._id;
 
+    // Fetch the chat with populated data
     const chat = await Chat.findById(cId)
       .populate("users", "-password")
       .populate("latestMessage");
@@ -78,9 +103,22 @@ const fetchChatsById = async (req, res) => {
         .json({ success: false, message: "Failed to fetch chats." });
     }
 
-    return res
-      .status(200)
-      .json({ success: true, message: "Chats fetched successfully", chat });
+    // Calculate total unseen messages for the logged-in user
+    const totalUnseenCount = await Message.countDocuments({
+      chatBW: cId, // Match messages in the current chat
+      sender: { $ne: myId }, // Sender should not be the logged-in user
+      receiver: myId, // The logged-in user must be in the receiver array
+      isRead: false, // Message must be unseen
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Chats fetched successfully",
+      chat: {
+        ...chat._doc,
+        totalUnseenCount, // Add total unseen count to the response
+      },
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Failed to fetch chats" });

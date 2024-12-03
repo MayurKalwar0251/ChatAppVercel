@@ -1,12 +1,5 @@
-import React, { useRef } from "react";
-import {
-  Upload,
-  X,
-  ImageIcon,
-  Film,
-  ChevronDown,
-  FileIcon,
-} from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Upload, ImageIcon, Film, FileIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
 const SendImageVideo = ({ files, setFiles, fileType, setFileType }) => {
   const fileInputRef = useRef(null);
 
@@ -28,66 +22,52 @@ const SendImageVideo = ({ files, setFiles, fileType, setFileType }) => {
     setFiles(newFiles);
   };
 
-  const removeFile = (fileToRemove) => {
-    setFiles(files.filter((file) => file !== fileToRemove));
-    URL.revokeObjectURL(fileToRemove.preview);
-  };
-
-  const triggerFileInput = () => {
-    fileInputRef.current.click();
-  };
-
-  const handleTypeSelect = (type) => {
-    setFileType(type);
-    setFiles([]);
-  };
-
-  const getFileAcceptType = () => {
-    if (fileType === "image") {
-      return "image/*";
-    } else if (fileType == "video") {
-      return "video/*";
-    } else {
-      return ".pdf, .docx";
+  const triggerFileInput = (type) => {
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = getFileAcceptType(type);
+      setFileType(type);
+      fileInputRef.current.click();
     }
   };
 
-  const getFileAcceptTypeName = () => {
-    if (fileType === "image") {
-      return "Images";
-    } else if (fileType == "video") {
-      return "Video";
-    } else {
-      return "Files";
+  const getFileAcceptType = (type) => {
+    switch (type) {
+      case "image":
+        return "image/*";
+      case "video":
+        return "video/*";
+      case "files":
+        return ".pdf,.docx,.txt";
+      default:
+        return "";
     }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-4 space-y-4">
+    <div className="relative">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="w-full">
-            {fileType === "image" ? (
-              <ImageIcon className="mr-2 h-4 w-4" />
-            ) : (
-              <Film className="mr-2 h-4 w-4" />
-            )}
-            Select {getFileAcceptTypeName()}
-            <ChevronDown className="ml-auto h-4 w-4" />
+          <Button variant="outline" size="icon" className="w-10 h-10">
+            <Upload className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-full">
-          <DropdownMenuItem onClick={() => handleTypeSelect("image")}>
+        <DropdownMenuContent
+          className="w-56"
+          align="center"
+          side="top"
+          sideOffset={5}
+        >
+          <DropdownMenuItem onClick={() => triggerFileInput("image")}>
             <ImageIcon className="mr-2 h-4 w-4" />
-            Images
+            <span>Upload Image</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleTypeSelect("video")}>
+          <DropdownMenuItem onClick={() => triggerFileInput("video")}>
             <Film className="mr-2 h-4 w-4" />
-            Video
+            <span>Upload Video</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleTypeSelect("files")}>
+          <DropdownMenuItem onClick={() => triggerFileInput("files")}>
             <FileIcon className="mr-2 h-4 w-4" />
-            File
+            <span>Upload File</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -98,18 +78,13 @@ const SendImageVideo = ({ files, setFiles, fileType, setFileType }) => {
         ref={fileInputRef}
         className="hidden"
         onChange={handleFileChange}
-        accept={getFileAcceptType()}
-        multiple={fileType === "image" || fileType === "files"}
+        multiple
       />
 
-      <Button onClick={triggerFileInput} className="w-full">
-        {getFileAcceptTypeName()}
-      </Button>
-
       {files.length > 0 && (
-        <div className="w-full flex gap-2 overflow-x-auto">
+        <div className="mt-4 flex flex-wrap gap-2">
           {files.map((file, index) => (
-            <div key={index} className="relative group flex-shrink-0">
+            <div key={index} className="relative group">
               {file.type.startsWith("image/") ? (
                 <img
                   src={file.preview}
@@ -120,23 +95,25 @@ const SendImageVideo = ({ files, setFiles, fileType, setFileType }) => {
                 <video
                   src={file.preview}
                   className="w-16 h-16 rounded-lg object-cover"
-                  controls
                 />
-              ) : file.type === "application/pdf" ? (
-                <embed
-                  src={file.preview}
-                  className="w-16 h-16 rounded-lg object-cover"
-                  type="application/pdf"
-                  height="100%"
-                />
-              ) : null}
-              <button
-                onClick={() => removeFile(file)}
-                className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                aria-label={`Remove ${file.name}`}
-              >
-                <X className="w-4 h-4" />
-              </button>
+              ) : (
+                <div className="w-16 h-16 rounded-lg bg-gray-200 flex items-center justify-center">
+                  <FileIcon className="w-8 h-8 text-gray-500" />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => {
+                    setFiles(files.filter((_, i) => i !== index));
+                    URL.revokeObjectURL(file.preview);
+                  }}
+                >
+                  Remove
+                </Button>
+              </div>
             </div>
           ))}
         </div>

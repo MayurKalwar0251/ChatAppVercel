@@ -13,6 +13,8 @@ import { UserChatContext } from "@/context/chatContext";
 import AudioMessage from "./AudioMessage";
 import SendImageVideo from "./SendImageVideo";
 import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
+import { server } from "@/utils/server";
+import axios from "axios";
 
 function MessageContainer({ chatId, onBack, chats, socket }) {
   const chat = chats.find((c) => c._id === chatId);
@@ -57,43 +59,55 @@ function MessageContainer({ chatId, onBack, chats, socket }) {
     }
   }, [chat.users, onlineUsers, chat.isGroupChat, user._id]);
 
-  // Handle sending messages
+  // function for submitting audiio and message
   async function handleSubmit(e) {
     e.preventDefault();
     setSendingMsgLoading(true);
 
-    let fileContent = null;
-    let fileType = null;
+    const formData = new FormData();
+
+    // Add content, chatId, and other necessary fields to the formData
+    formData.append("content", content.trim());
+    formData.append("chatId", chat._id);
 
     if (audioBlob) {
-      fileContent = await uploadToCloudinary({ file: audioBlob });
-      fileType = "audio";
+      // If there is an audio blob, append it to formData
+      formData.append("fileContent", audioBlob, "audiofile.mp3"); // Adjust the file name and extension as needed
+      formData.append("fileType", "audio");
     }
 
-    // if (content.trim().length === 0 && fileContent == null)
-    //   return alert("Type Any Message First");
+    // Send the formData to the backend using axios
+    try {
+      const response = await axios.post(`${server}/message`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        withCredentials: true, // Ensure that credentials (cookies) are included
+      });
 
-    const msg = await sendUserMessage({
-      content: content.trim(),
-      chatId: chat._id,
-      setMessages,
-      setLoadingMessages,
-      setErrorMessages,
-      messages,
-      fileContent,
-      fileType,
-    });
-    if (typing) {
-      setTyping(false);
-      socket.emit("stop typing", selectedChat);
+      const msg = response.data.messageSend; // Assuming the backend sends the message in the response
+
+      if (typing) {
+        setTyping(false);
+        socket.emit("stop typing", selectedChat);
+      }
+      socket.emit("new message", msg);
+
+      // Update the UI with the new message
+      setMessages((prevMessages) => [...prevMessages, msg]);
+
+      // Refresh the chat state
+      getUserChatById(chatId, chats, setChats, setLoadingChats, setErrorChats);
+
+      // Reset state after sending the message
+      setAudioBlob(null);
+      setAudioUrl("");
+      setContent("");
+      setSendingMsgLoading(false);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      setSendingMsgLoading(false);
     }
-    socket.emit("new message", msg);
-    setMessages((prevMessages) => [...prevMessages, msg]);
-    getUserChatById(chatId, chats, setChats, setLoadingChats, setErrorChats);
-    setAudioBlob(null);
-    setAudioUrl("");
-    setContent("");
-    setSendingMsgLoading(false);
   }
 
   // Socket event listeners for typing and receiving messages
@@ -188,36 +202,49 @@ function MessageContainer({ chatId, onBack, chats, socket }) {
     if (files && files.length > 0) {
       const messagesArray = [];
       const fileUploadPromises = files.map(async (file) => {
-        const fileContent = await uploadToCloudinary({ file });
-        const fileTypeOfFile = fileType;
+        try {
+          // Create FormData and append the necessary fields
+          const formData = new FormData();
+          formData.append("content", content.trim()); // Message content
+          formData.append("fileContent", file); // The file to upload (will be handled by backend)
+          formData.append("fileType", fileType); // Type of the file (image/audio/video, etc.)
+          formData.append("chatId", chat._id); // Chat ID
 
-        if (!fileContent) return;
+          // Send FormData to the backend API
+          const response = await axios.post(`${server}/message`, formData, {
+            headers: {
+              "Content-Type": "multipart/form-data", // Let axios set this header correctly
+            },
+            withCredentials: true, // Ensures credentials like cookies are sent with the request
+          });
 
-        const msg = await sendUserMessage({
-          content: content.trim(),
-          chatId: chat._id,
-          setMessages,
-          setLoadingMessages,
-          setErrorMessages,
-          messages,
-          fileContent,
-          fileType: fileTypeOfFile,
-        });
-        messagesArray.push(msg);
+          const data = await response.data;
 
-        socket.emit("new message", msg);
+          console.log("DATA,", data);
+
+          if (!data.success) {
+            throw new Error(data.message || "Message send failed");
+          }
+
+          const msg = data.messageSend; // Message object returned from backend
+          messagesArray.push(msg);
+
+          // Emit the message via socket
+          socket.emit("new message", msg);
+        } catch (error) {
+          console.error("Error sending message:", error);
+        }
       });
 
       // Wait for all file uploads and message sends to complete
       await Promise.all(fileUploadPromises);
 
+      // Update messages and chat states
       setMessages((prevMessages) => [...prevMessages, ...messagesArray]);
-      // Update the chat state once after all messages are sent
       getUserChatById(chatId, chats, setChats, setLoadingChats, setErrorChats);
 
       // Cleanup and reset states
       setFiles([]);
-      setFileType("image");
       setAudioBlob(null);
       setAudioUrl("");
       setContent("");
@@ -237,6 +264,7 @@ function MessageContainer({ chatId, onBack, chats, socket }) {
         userId: user._id,
         messageIds: unseenMessages.map((msg) => msg._id),
       });
+      getUserChatById(chatId, chats, setChats, setLoadingChats, setErrorChats);
     }
   }, [messages, user._id, chatId]);
 

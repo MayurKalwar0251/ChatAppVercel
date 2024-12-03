@@ -65,10 +65,9 @@ function ChatItem({ chat, onSelect, selectedChat }) {
         </div>
 
         {chat.latestMessage && (
-          <div className="flex items-center gap-2">
-            {/* Check the fileType to display the content type */}
-            {/* For Status of message . Will add these too later after redis
-             {chat.latestMessage.sender === user._id && (
+          <div className="flex items-center gap-2  w-min">
+            {/*
+            {chat.latestMessage.sender === user._id && (
               <span>
                 {chat.latestMessage.isRead ? (
                   <CheckCheck className="h-5 w-5 opacity-75 text-green-500" />
@@ -78,6 +77,7 @@ function ChatItem({ chat, onSelect, selectedChat }) {
               </span>
             )}
             */}
+            {/* Check the fileType to display the content type */}
             {chat.latestMessage.fileType === "audio" ? (
               // Display "Audio" if file type is audio
               <span className="flex gap-2 text-sm text-black">
@@ -98,13 +98,18 @@ function ChatItem({ chat, onSelect, selectedChat }) {
               // If it's a text message, just display the content
               <span className="truncate text-sm text-black">
                 {chat.latestMessage.content.length > 30
-                  ? chat.latestMessage.content
-                  : chat.latestMessage.content.slice(0, 30)}
+                  ? chat.latestMessage.content.slice(0, 30) + "......"
+                  : chat.latestMessage.content}
               </span>
             )}
           </div>
         )}
       </div>
+      {chat.totalUnseenCount > 0 && (
+        <div className="flex items-center justify-center bg-red-500 text-white rounded-full w-6 h-6 text-sm font-bold shadow-md">
+          {chat.totalUnseenCount}
+        </div>
+      )}
     </button>
   );
 }

@@ -8,6 +8,7 @@ const messageRouter = require("./routes/message");
 const cors = require("cors");
 const User = require("./models/user");
 const Message = require("./models/message");
+const fileUpload = require("express-fileupload");
 
 const app = express();
 dotenv.config();
@@ -21,6 +22,13 @@ app.use(
   cors({
     origin: process.env.FRONTEND_URL,
     credentials: true,
+  })
+);
+
+app.use(
+  fileUpload({
+    useTempFiles: true,
+    // tempFileDir: "/tmp/",
   })
 );
 

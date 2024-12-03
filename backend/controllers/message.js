@@ -1,5 +1,13 @@
 const Chat = require("../models/chat");
 const Message = require("../models/message");
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLIENTS_NAME || "dfiw6zwz0",
+  api_key: process.env.CLOUDINARY_CLIENTS_API_KEY || "144523521517367",
+  api_secret:
+    process.env.CLOUDINARY_CLIENTS_API_SECRET || "h1vXSiyhro1GbLNXA4cru6SHOFY",
+});
 
 const sendMessage = async (req, res) => {
   try {
@@ -89,7 +97,72 @@ const fetchMessages = async (req, res) => {
   }
 };
 
+const sendMessageAndCloudinaryForFileContent = async (req, res) => {
+  try {
+    const { content, chatId, fileType } = req.body;
+
+    const myId = req.user._id;
+
+    if (!chatId) {
+      return res.status(400).json({
+        success: false,
+        message: "Chat Id is required",
+      });
+    }
+
+    const sender = req.user._id;
+    const chat = await Chat.findById(chatId);
+    const users = chat.users.filter((c) => c.toString() !== myId.toString());
+    const recv = users;
+
+    let file;
+    if (req.files && req.files.fileContent) {
+      // Upload to Cloudinary
+      const result = await cloudinary.uploader.upload(
+        req.files.fileContent.tempFilePath,
+        {
+          folder: "multi-vendor-mern/products",
+          resource_type: "auto",
+        }
+      );
+
+      file = result.secure_url;
+    }
+
+    // Save the message in the database
+    const msg = await Message.create({
+      sender,
+      receiver: recv,
+      content,
+      chatBW: chatId,
+      fileContent: file, // Store Cloudinary file details
+      fileType,
+    });
+
+    await Chat.findByIdAndUpdate(chatId, { latestMessage: msg });
+
+    const messageSend = await Message.findById(msg._id)
+      .populate("sender", "-password")
+      .populate("receiver", "-password")
+      .populate("chatBW");
+
+    res.status(200).json({
+      success: true,
+      message: "Message sent successfully",
+      messageSend,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   sendMessage,
   fetchMessages,
+  sendMessageAndCloudinaryForFileContent,
 };

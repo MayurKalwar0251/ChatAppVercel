@@ -2,6 +2,7 @@ import { UserContext } from "@/context/context";
 import { cn } from "@/lib/utils";
 import { Check, CheckCheck } from "lucide-react";
 import React, { useContext, useEffect, useState } from "react";
+import { AudioMessagePlayer } from "./AudioMessagePlayer";
 
 function Message({ message }) {
   const [me, setMe] = useState(null);
@@ -34,10 +35,7 @@ function Message({ message }) {
               />
             )}
             {message.fileType === "audio" && (
-              <audio controls className="w-full">
-                <source src={message.fileContent} type="audio/mpeg" />
-                Your browser does not support the audio element.
-              </audio>
+              <AudioMessagePlayer audioUrl={message.fileContent} />
             )}
             {message.fileType === "video" && (
               <video controls className="w-44 h-44 rounded-lg">
@@ -46,11 +44,12 @@ function Message({ message }) {
               </video>
             )}
             {message.fileType === "files" && (
-              <embed
+              <iframe
                 src={message.fileContent}
-                className="w-16 h-16 rounded-lg object-cover"
-                type="application/pdf"
-                height="100%"
+                className="w-full h-80 rounded-lg"
+                frameBorder="0"
+                height="100%" // Adjust height as needed
+                width="100%" // Adjust width as needed
               />
             )}
           </>
