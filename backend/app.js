@@ -39,13 +39,6 @@ app.use("/api/v1/user", userRouter);
 app.use("/api/v1/chat", chatRouter);
 app.use("/api/v1/message", messageRouter);
 
-// app.get("/", (req, res) => {
-//   res.status(200).json({
-//     success: true,
-//     message: "Server Running",
-//   });
-// });
-
 app.get("/", (req, res) => {
   app.use(express.static(path.resolve(__dirname, "frontend", "dist")));
   res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
@@ -56,6 +49,7 @@ const server = app.listen(process.env.PORT, () => {
 });
 
 const io = require("socket.io")(server, {
+  transports: ["websocket"],
   pingTimeout: 10000,
   cors: {
     origin: process.env.FRONTEND_URL,

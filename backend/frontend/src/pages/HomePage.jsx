@@ -37,7 +37,10 @@ export default function HomePage() {
 
   React.useEffect(() => {
     // Initialize socket connection
-    socketRef.current = io(serverHost, { withCredentials: true });
+    socketRef.current = io(serverHost, {
+      transports: ["websocket"],
+      withCredentials: true,
+    });
 
     socketRef.current.emit("setup", user._id);
 
