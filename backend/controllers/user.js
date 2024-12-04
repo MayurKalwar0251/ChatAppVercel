@@ -70,7 +70,15 @@ const loginUser = async (req, res) => {
     });
   }
 
-  sendToken(user, 200, "User Logged In Successfully", res);
+  // sendToken(user, 200, "User Logged In Successfully", res);
+
+  req.session.userId = user._id;
+  res.status(200).json({
+    success: true,
+    message: "User Login Success",
+    session: req.session.userId,
+    user,
+  });
 };
 
 const generateToken = async (userID) => {

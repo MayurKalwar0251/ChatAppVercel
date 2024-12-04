@@ -10,6 +10,8 @@ const User = require("./models/user");
 const Message = require("./models/message");
 const fileUpload = require("express-fileupload");
 const path = require("path");
+const session = require("express-session");
+const MongoStore = require("connect-mongo");
 
 const app = express();
 dotenv.config();
@@ -34,6 +36,22 @@ app.use(
 );
 
 connectDb();
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET, // Replace with a strong secret key
+    resave: false, // Prevents session saving if unmodified
+    saveUninitialized: false, // Prevents saving empty sessions
+    store: MongoStore.create({
+      mongoUrl: process.env.DB,
+    }),
+    cookie: {
+      httpOnly: true, // Protects cookies from being accessed via client-side scripts
+      secure: process.env.NODE_ENV === "production", // Only allow HTTPS in production
+      maxAge: 1000 * 60 * 60 * 24, // 1-day session expiration
+    },
+  })
+);
 
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/chat", chatRouter);

@@ -12,25 +12,18 @@ import { getUserChats } from "./context/Chats/Chats";
 import { UserChatContext } from "./context/chatContext";
 
 function App() {
-  const { setUser, user, isAuthen, setIsAuthen, setLoading, setError } =
+  const { loading, setUser, user, setIsAuthen, setLoading, setError } =
     useContext(UserContext);
   const { chats, setChats, setLoadingChats, setErrorChats } =
     useContext(UserChatContext);
   useEffect(() => {
     const checkCookiesAndDispatch = () => {
-      const userToken = document.cookie.includes("token");
-
-      console.log("USERTOEKN User Login or not", userToken);
-
-      if (userToken) {
-        getUserDetails(setIsAuthen, setUser, setLoading, setError);
-        getUserChats(setChats, setLoadingChats, setErrorChats);
-      } else {
-        setLoading(false);
-      }
+      getUserDetails(setIsAuthen, setUser, setLoading, setError);
+      getUserChats(setChats, setLoadingChats, setErrorChats);
+      setLoading(false);
     };
     checkCookiesAndDispatch();
-  }, [isAuthen]);
+  }, []);
 
   return (
     <BrowserRouter>
